@@ -14,27 +14,71 @@ package build
 */
 
 import (
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/moloch--/denim/pkg/assets"
 	"github.com/moloch--/denim/pkg/nim"
 	"github.com/moloch--/denim/pkg/ollvm"
 )
 
+// Build - Denim build args
+type Build struct {
+	Name     string
+	NimFiles []string
+
+	UserCodeOnly bool
+}
+
 // Compile a nim program with Obfuscator-LLVM
-func Compile(project string, nimFiles []string, obfArgs *ollvm.ObfArgs) error {
+func Compile(build *Build, obfArgs *ollvm.ObfArgs) error {
 	clang, err := ollvm.InitClang(assets.GetClangDir())
 	if err != nil {
 		return err
 	}
-	nimCache, err := compileNimCode(project, nimFiles, clang)
+
+	// Compile Nim
+	nimCache, err := compileNimCode(build.Name, build.NimFiles, clang)
+	if err != nil {
+		return err
+	}
+	nimProject, err := parseProjectJSON(nimCache)
 	if err != nil {
 		return err
 	}
 
-	parseProjectJson(nimCache)
+	// Compile C
+	for _, step := range nimProject.Compile {
+		if len(step) != 2 {
+			return fmt.Errorf("Malformed step: %v", step)
+		}
+		cFile := filepath.Base(step[0])
+		compileCmd := strings.Fields(step[1])
+		if compileCmd[0] == "clang" || compileCmd[0] == "clang.exe" {
+			compileCmd = compileCmd[1:]
+		}
+		var err error
+		if strings.HasPrefix(cFile, "@") || !build.UserCodeOnly {
+			_, _, err = clang.ObfCompile(nimCache, compileCmd, obfArgs)
+		} else {
+			_, _, err = clang.Compile(nimCache, compileCmd)
+		}
+		if err != nil {
+			return err
+		}
+	}
+	linker := strings.Fields(nimProject.LinkCmd)
+	if linker[0] == "clang" || linker[0] == "clang.exe" {
+		linker = linker[1:]
+	}
+	_, _, err = clang.Compile(nimCache, linker)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -60,6 +104,22 @@ func compileNimCode(project string, nimFiles []string, clang *ollvm.Clang) (stri
 	return nimCache, err
 }
 
-func parseProjectJson(nimCache string) {
-
+func parseProjectJSON(nimCache string) (*nim.Project, error) {
+	entries, err := ioutil.ReadDir(nimCache)
+	if err != nil {
+		return nil, err
+	}
+	for _, entry := range entries {
+		entryPath := filepath.Join(nimCache, entry.Name())
+		if strings.HasSuffix(entryPath, ".json") {
+			data, err := ioutil.ReadFile(entryPath)
+			if err != nil {
+				return nil, err
+			}
+			project := &nim.Project{}
+			err = json.Unmarshal(data, project)
+			return project, err
+		}
+	}
+	return nil, nil
 }

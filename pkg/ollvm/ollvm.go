@@ -2,6 +2,8 @@ package ollvm
 
 import (
 	"bytes"
+	"crypto/rand"
+	"crypto/sha256"
 	"fmt"
 	"os"
 	"os/exec"
@@ -45,10 +47,6 @@ type Clang struct {
 // ObfArgs - Build options
 type ObfArgs struct {
 
-	// Compile Options
-	Static bool     `json:"static,omitempty"`
-	Link   []string `json:"link,omitempty"`
-
 	// Bogus control flow
 	BCF     bool `json:"bcf"`
 	BCFProb int  `json:"bcf_prob"`
@@ -87,15 +85,39 @@ func (c *Clang) Version() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	mingw := filepath.Join(assets.GetMingwDir(), "bin")
+	mingwBinDir := filepath.Join(assets.GetMingwDir(), "bin")
 	env := []string{
-		fmt.Sprintf("PATH=%s;%s", c.ClangBinDir, mingw),
+		fmt.Sprintf("PATH=%s;%s", c.ClangBinDir, mingwBinDir),
 	}
 	stdout, stderr, err := c.clangCmd(cwd, env, []string{"--version"})
 	if err != nil {
 		return string(stderr), err
 	}
 	return string(stdout), nil
+}
+
+// ObfCompile - Compile obfuscated C code
+func (c *Clang) ObfCompile(wd string, args []string, obfArgs *ObfArgs) ([]byte, []byte, error) {
+	err := c.verifyObfArgs(obfArgs)
+	if err != nil {
+		return []byte{}, []byte{}, err
+	}
+	mingwBinDir := filepath.Join(assets.GetMingwDir(), "bin")
+	env := []string{
+		fmt.Sprintf("PATH=%s;%s", c.ClangBinDir, mingwBinDir),
+	}
+	command := c.getCmdObfArgs(obfArgs)
+	command = append(command, args...)
+	return c.clangCmd(wd, env, command)
+}
+
+// Compile - Compile C code (no obfuscation)
+func (c *Clang) Compile(wd string, args []string) ([]byte, []byte, error) {
+	mingwBinDir := filepath.Join(assets.GetMingwDir(), "bin")
+	env := []string{
+		fmt.Sprintf("PATH=%s;%s", c.ClangBinDir, mingwBinDir),
+	}
+	return c.clangCmd(wd, env, args)
 }
 
 // clangCmd - Execute a nim command
@@ -125,4 +147,44 @@ func (c *Clang) verifyObfArgs(obfArgs *ObfArgs) error {
 		return fmt.Errorf("Flatten split cannot exceed %d", MaxSplit)
 	}
 	return nil
+}
+
+func (c *Clang) getCmdObfArgs(obfArgs *ObfArgs) []string {
+	cmdArgs := []string{}
+
+	if obfArgs.BCF {
+		cmdArgs = append(cmdArgs, []string{"-mllvm", "-bcf"}...)
+		bcfProb := fmt.Sprintf("-bcf_prob=%d", getIntArg(obfArgs.BCFProb))
+		cmdArgs = append(cmdArgs, []string{"-mllvm", bcfProb}...)
+		bcfLoop := fmt.Sprintf("-bcf_loop=%d", getIntArg(obfArgs.BCFLoop))
+		cmdArgs = append(cmdArgs, []string{"-mllvm", bcfLoop}...)
+	}
+	if obfArgs.Sub {
+		cmdArgs = append(cmdArgs, []string{"-mllvm", "-sub"}...)
+		subLoop := fmt.Sprintf("-sub_loop=%d", getIntArg(obfArgs.SubLoop))
+		cmdArgs = append(cmdArgs, []string{"-mllvm", subLoop}...)
+	}
+	if obfArgs.AESSeed == "" {
+		obfArgs.AESSeed = randomSeed()
+	}
+	digest := sha256.New()
+	digest.Write([]byte(obfArgs.AESSeed))
+	aesSeed := fmt.Sprintf("-aesSeed=%x", digest.Sum(nil)[:16])
+	cmdArgs = append(cmdArgs, []string{"-mllvm", aesSeed}...)
+	return cmdArgs
+}
+
+func getIntArg(x int) int {
+	if x < 1 {
+		return 1
+	}
+	return x
+}
+
+func randomSeed() string {
+	buf := make([]byte, 32)
+	rand.Read(buf)
+	digest := sha256.New()
+	digest.Write(buf)
+	return fmt.Sprintf("%x", digest.Sum(nil))
 }

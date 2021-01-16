@@ -44,8 +44,12 @@ var compileCmd = &cobra.Command{
 		if err != nil {
 			return
 		}
-
-		build.Compile(filepath.Base(args[0]), args, obfArgs)
+		buildArgs := &build.Build{
+			Name:         filepath.Base(args[0]),
+			NimFiles:     args,
+			UserCodeOnly: true,
+		}
+		build.Compile(buildArgs, obfArgs)
 	},
 }
 
