@@ -1,4 +1,4 @@
-package assets
+package nim
 
 /*
 	This program is free software: you can redistribute it and/or modify
@@ -13,34 +13,7 @@ package assets
 	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import (
-	"log"
-	"os"
-	"os/user"
-	"path"
-	"path/filepath"
-)
-
 const (
-	// DenimRootDirName - Directory storing all of the client configs/logs
-	DenimRootDirName = ".denim"
+	// Nim - Main executable
+	Nim = "nim.exe"
 )
-
-// GetRootDir - Get the denim root directory
-func GetRootDir() string {
-	user, _ := user.Current()
-	dir := path.Join(user.HomeDir, DenimRootDirName)
-	if _, err := os.Stat(dir); os.IsNotExist(err) {
-		err = os.MkdirAll(dir, 0700)
-		if err != nil {
-			log.Fatal(err)
-		}
-	}
-	return dir
-}
-
-// GetClangDir - Get the clang root directory
-func GetClangDir() string {
-	rootDir := GetRootDir()
-	return filepath.Join(rootDir, "ollvm", "build")
-}

@@ -16,6 +16,9 @@ package cmd
 import (
 	"fmt"
 
+	"github.com/moloch--/denim/pkg/assets"
+	"github.com/moloch--/denim/pkg/nim"
+	"github.com/moloch--/denim/pkg/ollvm"
 	"github.com/spf13/cobra"
 )
 
@@ -29,6 +32,26 @@ var versionCmd = &cobra.Command{
 	Short: "Display version information",
 	Long:  `Print the version number of denim and exit`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Printf("v%s\n", Version)
+		fmt.Printf("Denim v%s\n\n", Version)
+
+		nimVer, err := nim.Version()
+		if err != nil {
+			fmt.Printf(Warn + "Nim does not appear to be on your PATH!")
+		} else {
+			fmt.Printf(nimVer + "\n\n")
+		}
+
+		clang, err := ollvm.InitClang(assets.GetClangDir())
+		if err != nil {
+			fmt.Printf(Warn + "No clang, please run 'denim setup'")
+		} else {
+			clangVer, err := clang.Version()
+			if err != nil {
+				fmt.Printf(Warn+"%s\n", err)
+			} else {
+				fmt.Printf(clangVer + "\n")
+			}
+		}
+
 	},
 }

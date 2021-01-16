@@ -1,5 +1,18 @@
 package cmd
 
+/*
+	This program is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
+	This program is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+	You should have received a copy of the GNU General Public License
+	along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
 import (
 	"crypto/tls"
 	"fmt"
@@ -14,6 +27,8 @@ import (
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/cheggaaa/pb/v3"
 	"github.com/moloch--/denim/pkg/assets"
+	"github.com/moloch--/denim/pkg/nim"
+	"github.com/moloch--/denim/pkg/util"
 	"github.com/spf13/cobra"
 )
 
@@ -36,22 +51,44 @@ var setupCmd = &cobra.Command{
 
 func setup(cmd *cobra.Command, args []string) {
 	denimDir := assets.GetRootDir()
+
+	_, err := nim.Version()
+	if err != nil {
+		fmt.Printf(Warn + "Nim does not appear to be on your PATH!")
+	}
+
 	client := initHTTPClient(cmd)
 	if client == nil {
 		return
 	}
 
-	fmt.Println("Downloading nim ...")
-	err := downloadAsset(client, NimURL, denimDir)
+	fmt.Println("Downloading obfuscator llvm ...")
+	llvmTar := filepath.Join(denimDir, "ollvm.tar.gz")
+	if _, err := os.Stat(llvmTar); !os.IsNotExist(err) {
+		os.Remove(llvmTar)
+	}
+	err = downloadAsset(client, ObfuscatorLLVMURL, llvmTar)
 	if err != nil {
 		fmt.Printf(Warn+"Download failed %s\n", err)
 	}
 
-	fmt.Println("Downloading obfuscator llvm ...")
-	err = downloadAsset(client, ObfuscatorLLVMURL, denimDir)
-	if err != nil {
-		fmt.Printf(Warn+"Download failed %s\n", err)
+	fmt.Println("Extracting obfuscator-llvm, please wait ...")
+	unpackDir := filepath.Join(denimDir, "ollvm")
+	if _, err := os.Stat(unpackDir); !os.IsNotExist(err) {
+		os.RemoveAll(unpackDir)
 	}
+	tarReader, err := os.Open(llvmTar)
+	if err != nil {
+		fmt.Printf(Warn+"Failed to read %s", err)
+		return
+	}
+	err = util.Untar(unpackDir, tarReader)
+	if err != nil {
+		fmt.Printf(Warn+"Failed to extract obfuscator-llvm %s", err)
+		return
+	}
+	tarReader.Close()
+	os.Remove(llvmTar)
 }
 
 func initHTTPClient(cmd *cobra.Command) *http.Client {
@@ -116,12 +153,7 @@ func initHTTPClient(cmd *cobra.Command) *http.Client {
 }
 
 func downloadAsset(client *http.Client, assetURL string, saveTo string) error {
-	downloadURL, err := url.Parse(assetURL)
-	if err != nil {
-		return err
-	}
-	assetFileName := filepath.Base(downloadURL.Path)
-	writer, err := os.Create(filepath.Join(saveTo, assetFileName))
+	writer, err := os.Create(saveTo)
 	if err != nil {
 		return err
 	}
@@ -133,5 +165,7 @@ func downloadAsset(client *http.Client, assetURL string, saveTo string) error {
 	barReader := bar.NewProxyReader(resp.Body)
 	io.Copy(writer, barReader)
 	bar.Finish()
+	fmt.Printf(upN, 1)
+	fmt.Printf(clearln + "\r")
 	return nil
 }

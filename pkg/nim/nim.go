@@ -1,4 +1,4 @@
-package assets
+package nim
 
 /*
 	This program is free software: you can redistribute it and/or modify
@@ -14,33 +14,33 @@ package assets
 */
 
 import (
-	"log"
+	"bytes"
 	"os"
-	"os/user"
-	"path"
-	"path/filepath"
+	"os/exec"
 )
 
-const (
-	// DenimRootDirName - Directory storing all of the client configs/logs
-	DenimRootDirName = ".denim"
-)
-
-// GetRootDir - Get the denim root directory
-func GetRootDir() string {
-	user, _ := user.Current()
-	dir := path.Join(user.HomeDir, DenimRootDirName)
-	if _, err := os.Stat(dir); os.IsNotExist(err) {
-		err = os.MkdirAll(dir, 0700)
-		if err != nil {
-			log.Fatal(err)
-		}
-	}
-	return dir
+// nimCmd - Execute a nim command
+func nimCmd(wd string, env []string, command []string) ([]byte, []byte, error) {
+	cmd := exec.Command(Nim, command...)
+	cmd.Dir = wd
+	cmd.Env = env
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	err := cmd.Run()
+	return stdout.Bytes(), stderr.Bytes(), err
 }
 
-// GetClangDir - Get the clang root directory
-func GetClangDir() string {
-	rootDir := GetRootDir()
-	return filepath.Join(rootDir, "ollvm", "build")
+// Version - Get nim version output
+func Version() (string, error) {
+	cwd, err := os.Getwd()
+	if err != nil {
+		return "", err
+	}
+	stdout, stderr, err := nimCmd(cwd, []string{}, []string{"--version"})
+	if err != nil {
+		return string(stderr), err
+	}
+	return string(stdout), nil
 }
