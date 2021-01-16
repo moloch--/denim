@@ -13,7 +13,6 @@ jobs:
     runs-on: windows-latest
 
     steps:
-      - uses: msys2/setup-msys2@v2
 
       - name: Checkout Code
         uses: actions/checkout@v2
@@ -34,4 +33,4 @@ jobs:
           repo_token: "${{ secrets.GITHUB_TOKEN }}"
           prerelease: false
           files: |
-            ./build.tar.gz
+            ./denim.exe
