@@ -57,3 +57,16 @@ func GetNimCacheRoot() string {
 	}
 	return nimcache
 }
+
+// GetMingwDir - Get mingw64 root dir
+func GetMingwDir() string {
+	rootDir := GetRootDir()
+	nimcache := filepath.Join(rootDir, "mingw64")
+	if _, err := os.Stat(nimcache); os.IsNotExist(err) {
+		err = os.MkdirAll(nimcache, 0700)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+	return nimcache
+}

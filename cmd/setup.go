@@ -80,6 +80,7 @@ func setup(cmd *cobra.Command, args []string) {
 	sevenZipDir := filepath.Join(denimDir, "7z")
 	util.Unzip(sevenZip, sevenZipDir)
 	sevenZipExe := filepath.Join(sevenZipDir, "7za.exe")
+	os.Remove(sevenZip)
 
 	// Mingw-x64
 	fmt.Println(Info + "Downloading mingw-x64 ...")
@@ -93,12 +94,12 @@ func setup(cmd *cobra.Command, args []string) {
 		return
 	}
 	fmt.Println(Info + "Extracting mingw-x64 ...")
-	mingwDir := filepath.Join(denimDir, "mingw64")
-	err = util.Extract7z(sevenZipExe, mingw7z, mingwDir)
+	err = util.Extract7z(sevenZipExe, mingw7z, denimDir)
 	if err != nil {
 		fmt.Printf(Warn+"Failed to extract mingw-x64 %s\n", err)
 		return
 	}
+	os.Remove(mingw7z)
 
 	// obfuscator-llvm
 	fmt.Println(Info + "Downloading obfuscator-llvm ...")
@@ -127,6 +128,7 @@ func setup(cmd *cobra.Command, args []string) {
 		return
 	}
 	tarReader.Close()
+	os.Remove(llvmTar)
 }
 
 func initHTTPClient(cmd *cobra.Command) *http.Client {

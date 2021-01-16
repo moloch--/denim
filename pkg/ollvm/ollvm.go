@@ -6,6 +6,9 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"path/filepath"
+
+	"github.com/moloch--/denim/pkg/assets"
 )
 
 /*
@@ -84,9 +87,9 @@ func (c *Clang) Version() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	fmt.Printf("%v", os.Environ())
+	mingw := filepath.Join(assets.GetMingwDir(), "bin")
 	env := []string{
-		fmt.Sprintf("PATH=%s", c.ClangBinDir),
+		fmt.Sprintf("PATH=%s;%s", c.ClangBinDir, mingw),
 	}
 	stdout, stderr, err := c.clangCmd(cwd, env, []string{"--version"})
 	if err != nil {
