@@ -83,24 +83,15 @@ func Compile(build *Build, obfArgs *ollvm.ObfArgs) error {
 	return nil
 }
 
-//  nim compile --genScript --compileOnly --cc=clang --clang.exe:PATH --nimcache:PATH helloworld.nim
+// nim compile --genScript --compileOnly --cc=clang --clang.exe:PATH --nimcache:PATH helloworld.nim
 func compileNimCode(project string, nimFiles []string, clang *ollvm.Clang) (string, error) {
 	nimCache := filepath.Join(assets.GetNimCacheRoot(), project)
 	args := []string{"--genScript", "--compileOnly", "--cc:clang"}
 	args = append(args, fmt.Sprintf("--clang.exe=%s", clang.ClangExe))
 	args = append(args, fmt.Sprintf("--nimcache:%s", nimCache))
 	args = append(args, nimFiles...)
-
-	fmt.Println("------------[nim]------------")
-	fmt.Printf(" > nim compile %v\n\n", args)
-
 	workDir, _ := os.Getwd()
-	stdout, stderr, err := nim.Compile(workDir, os.Environ(), args)
-
-	fmt.Printf(string(stdout))
-	fmt.Printf(string(stderr))
-	fmt.Println("-----------------------------")
-
+	_, _, err := nim.Compile(workDir, os.Environ(), args)
 	return nimCache, err
 }
 
