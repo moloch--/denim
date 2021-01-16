@@ -16,38 +16,50 @@ package build
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/moloch--/denim/pkg/assets"
 	"github.com/moloch--/denim/pkg/nim"
 	"github.com/moloch--/denim/pkg/ollvm"
 )
 
-//  nim compile --genScript --compileOnly --cc=clang --clang.exe:PATH --nimcache:PATH helloworld.nim
-
 // Compile a nim program with Obfuscator-LLVM
-func Compile(nimFiles []string, obfArgs *ollvm.ObfArgs) error {
+func Compile(project string, nimFiles []string, obfArgs *ollvm.ObfArgs) error {
 	clang, err := ollvm.InitClang(assets.GetClangDir())
 	if err != nil {
 		return err
 	}
-	compileNimCode(nimFiles, clang)
+	nimCache, err := compileNimCode(project, nimFiles, clang)
+	if err != nil {
+		return err
+	}
+
+	parseProjectJson(nimCache)
 
 	return nil
 }
 
-func compileNimCode(nimFiles []string, clang *ollvm.Clang) error {
+//  nim compile --genScript --compileOnly --cc=clang --clang.exe:PATH --nimcache:PATH helloworld.nim
+func compileNimCode(project string, nimFiles []string, clang *ollvm.Clang) (string, error) {
+	nimCache := filepath.Join(assets.GetNimCacheRoot(), project)
 	args := []string{"--genScript", "--compileOnly", "--cc:clang"}
 	args = append(args, fmt.Sprintf("--clang.exe=%s", clang.ClangExe))
-	args = append(args, fmt.Sprintf("--nimcache:%s", assets.GetNimCache()))
+	args = append(args, fmt.Sprintf("--nimcache:%s", nimCache))
 	args = append(args, nimFiles...)
+
+	fmt.Println("------------[nim]------------")
+	fmt.Printf(" > nim compile %v\n\n", args)
 
 	workDir, _ := os.Getwd()
 	stdout, stderr, err := nim.Compile(workDir, os.Environ(), args)
 
-	fmt.Println("------------[nim]------------")
 	fmt.Printf(string(stdout))
 	fmt.Printf(string(stderr))
 	fmt.Println("-----------------------------")
 
-	return err
+	return nimCache, err
+}
+
+func parseProjectJson(nimCache string) {
+
 }

@@ -82,7 +82,7 @@ func init() {
 	// Setup options
 	setupCmd.Flags().BoolP(skipTLSValidationFlagStr, "V", false, "Skip TLS certificate validation")
 	setupCmd.Flags().StringP(proxyFlagStr, "H", "", "Specify HTTP(S) proxy URL (e.g. http://localhost:8080)")
-	setupCmd.Flags().IntP(timeoutFlagStr, "T", 30, "HTTPS request/connection timeout")
+	setupCmd.Flags().IntP(timeoutFlagStr, "T", 3600, "HTTPS request/connection timeout (default: 1hr)")
 	rootCmd.AddCommand(setupCmd)
 
 	// Compile - Obfuscator options

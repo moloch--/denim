@@ -36,8 +36,11 @@ var (
 	// ObfuscatorLLVMURL - URL to a O-LLVM Github repo
 	ObfuscatorLLVMURL string
 
-	// NimURL - URL to the nim package
-	NimURL string
+	// Mingw64URL - URL to mingw-x64 download
+	Mingw64URL string
+
+	// SevenZipURL - The MinGW people are assholes and only distribute 7z files
+	SevenZipURL string
 )
 
 var setupCmd = &cobra.Command{
@@ -62,7 +65,43 @@ func setup(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	fmt.Println("Downloading obfuscator llvm ...")
+	// 7z
+	fmt.Println(Info + "Downloading 7-zip ...")
+	sevenZip := filepath.Join(denimDir, "7z.zip")
+	if _, err := os.Stat(sevenZip); !os.IsNotExist(err) {
+		os.Remove(sevenZip)
+	}
+	err = downloadAsset(client, SevenZipURL, sevenZip)
+	if err != nil {
+		fmt.Printf(Warn+"Download failed %s\n", err)
+		return
+	}
+	fmt.Println(Info + "Extracting 7z ...")
+	sevenZipDir := filepath.Join(denimDir, "7z")
+	util.Unzip(sevenZip, sevenZipDir)
+	sevenZipExe := filepath.Join(sevenZipDir, "7za.exe")
+
+	// Mingw-x64
+	fmt.Println(Info + "Downloading mingw-x64 ...")
+	mingw7z := filepath.Join(denimDir, "mingw-x64.7z")
+	if _, err := os.Stat(mingw7z); !os.IsNotExist(err) {
+		os.Remove(mingw7z)
+	}
+	err = downloadAsset(client, Mingw64URL, mingw7z)
+	if err != nil {
+		fmt.Printf(Warn+"Download failed %s\n", err)
+		return
+	}
+	fmt.Println(Info + "Extracting mingw-x64 ...")
+	mingwDir := filepath.Join(denimDir, "mingw64")
+	err = util.Extract7z(sevenZipExe, mingw7z, mingwDir)
+	if err != nil {
+		fmt.Printf(Warn+"Failed to extract mingw-x64 %s\n", err)
+		return
+	}
+
+	// obfuscator-llvm
+	fmt.Println(Info + "Downloading obfuscator-llvm ...")
 	llvmTar := filepath.Join(denimDir, "ollvm.tar.gz")
 	if _, err := os.Stat(llvmTar); !os.IsNotExist(err) {
 		os.Remove(llvmTar)
@@ -70,9 +109,9 @@ func setup(cmd *cobra.Command, args []string) {
 	err = downloadAsset(client, ObfuscatorLLVMURL, llvmTar)
 	if err != nil {
 		fmt.Printf(Warn+"Download failed %s\n", err)
+		return
 	}
-
-	fmt.Println("Extracting obfuscator-llvm, please wait ...")
+	fmt.Println(Info + "Extracting obfuscator-llvm ...")
 	unpackDir := filepath.Join(denimDir, "ollvm")
 	if _, err := os.Stat(unpackDir); !os.IsNotExist(err) {
 		os.RemoveAll(unpackDir)
@@ -88,7 +127,6 @@ func setup(cmd *cobra.Command, args []string) {
 		return
 	}
 	tarReader.Close()
-	os.Remove(llvmTar)
 }
 
 func initHTTPClient(cmd *cobra.Command) *http.Client {
@@ -164,6 +202,7 @@ func downloadAsset(client *http.Client, assetURL string, saveTo string) error {
 	bar := pb.Full.Start64(resp.ContentLength)
 	barReader := bar.NewProxyReader(resp.Body)
 	io.Copy(writer, barReader)
+	writer.Close()
 	bar.Finish()
 	fmt.Printf(upN, 1)
 	fmt.Printf(clearln + "\r")

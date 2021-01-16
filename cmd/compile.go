@@ -16,6 +16,7 @@ package cmd
 import (
 	"fmt"
 	"math/rand"
+	"path/filepath"
 	"time"
 
 	"github.com/moloch--/denim/pkg/assets"
@@ -33,13 +34,18 @@ var compileCmd = &cobra.Command{
 		if !preflight() {
 			return
 		}
+
+		if len(args) < 1 {
+			fmt.Printf(Warn + "Missing input files\n")
+			return
+		}
+
 		obfArgs, err := getObfArgs(cmd)
 		if err != nil {
 			return
 		}
 
-		build.Compile(args, obfArgs)
-
+		build.Compile(filepath.Base(args[0]), args, obfArgs)
 	},
 }
 

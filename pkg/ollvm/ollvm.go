@@ -35,6 +35,7 @@ const (
 // Clang - Holds an instances of a clang install
 type Clang struct {
 	ClangRootDir string
+	ClangBinDir  string
 	ClangExe     string
 }
 
@@ -65,6 +66,7 @@ type ObfArgs struct {
 func InitClang(clangDir string) (*Clang, error) {
 	clang := &Clang{
 		ClangRootDir: clangDir,
+		ClangBinDir:  path.Join(clangDir, "bin"),
 		ClangExe:     path.Join(clangDir, "bin", "clang.exe"),
 	}
 	if _, err := os.Stat(clang.ClangRootDir); os.IsNotExist(err) {
@@ -82,7 +84,11 @@ func (c *Clang) Version() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	stdout, stderr, err := c.clangCmd(cwd, os.Environ(), []string{"--version"})
+	fmt.Printf("%v", os.Environ())
+	env := []string{
+		fmt.Sprintf("PATH=%s", c.ClangBinDir),
+	}
+	stdout, stderr, err := c.clangCmd(cwd, env, []string{"--version"})
 	if err != nil {
 		return string(stderr), err
 	}

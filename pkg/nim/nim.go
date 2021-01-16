@@ -19,6 +19,16 @@ import (
 	"os/exec"
 )
 
+// Project - Nim Project JSON
+type Project struct {
+	OutputFile string     `json:"outputFile"`
+	Compile    [][]string `json:"compile"`
+	Link       []string   `json:"link"`
+	LinkCmd    string     `json:"linkcmd"`
+	ExtraCmds  []string   `json:"extraCmds"`
+	StdinInput bool       `json:"stdinInput"`
+}
+
 // nimCmd - Execute a nim command
 func nimCmd(wd string, env []string, command []string) ([]byte, []byte, error) {
 	cmd := exec.Command(Nim, command...)
