@@ -45,6 +45,24 @@ const (
 	Debug = bold + purple + "[-] " + normal
 	// Woot - Display success
 	Woot = bold + green + "[$] " + normal
+
+	// Setup - Standard Flags
+	timeoutFlagStr           = "timeout"
+	skipTLSValidationFlagStr = "skip-tls-validation"
+	proxyFlagStr             = "proxy"
+
+	// Compile - Standard Flags
+	outputFlagStr = "output"
+
+	// Compile - Obfuscation Flags
+	bcfFlagStr      = "bcf"
+	bcfLoopFlagStr  = "bcf-loop"
+	bcfProbFlagStr  = "bcf-probability"
+	subFlagStr      = "sub"
+	subLoopFlagStr  = "sub-loop"
+	flattenFlagStr  = "flatten"
+	flattenSplitStr = "flatten-split"
+	seedFlagStr     = "seed"
 )
 
 var rootCmd = &cobra.Command{
@@ -61,12 +79,25 @@ func init() {
 	// Version
 	rootCmd.AddCommand(versionCmd)
 
-	// Setup
-	// Proxy options
-	setupCmd.Flags().BoolP("skip-tls-validation", "V", false, "Skip TLS certificate validation")
-	setupCmd.Flags().StringP("proxy", "H", "", "Specify HTTP(S) proxy URL (e.g. http://localhost:8080)")
-	setupCmd.Flags().IntP("timeout", "T", 30, "HTTPS request/connection timeout")
+	// Setup options
+	setupCmd.Flags().BoolP(skipTLSValidationFlagStr, "V", false, "Skip TLS certificate validation")
+	setupCmd.Flags().StringP(proxyFlagStr, "H", "", "Specify HTTP(S) proxy URL (e.g. http://localhost:8080)")
+	setupCmd.Flags().IntP(timeoutFlagStr, "T", 30, "HTTPS request/connection timeout")
 	rootCmd.AddCommand(setupCmd)
+
+	// Compile - Obfuscator options
+	compileCmd.Flags().BoolP(bcfFlagStr, "b", true, "Enable bogus control flow")
+	compileCmd.Flags().IntP(bcfLoopFlagStr, "C", 0, "Number of bogus control flow passes (0 = random)")
+	compileCmd.Flags().IntP(bcfProbFlagStr, "F", 100, "Probability a basic bloc will be obfuscated")
+	compileCmd.Flags().BoolP(subFlagStr, "s", true, "Enable instruction substitution")
+	compileCmd.Flags().IntP(subLoopFlagStr, "U", 0, "Number of instruction substitution passes (0 = random)")
+	compileCmd.Flags().BoolP(flattenFlagStr, "f", true, "Enable control flow flattening")
+	compileCmd.Flags().IntP(flattenSplitStr, "L", 0, "Splits applied to each block (0 = random)")
+	compileCmd.Flags().StringP(seedFlagStr, "r", "", "PRNG obfuscation seed (default is random)")
+
+	// Compile - Standard options
+	compileCmd.Flags().StringP(outputFlagStr, "o", "", "output file")
+	rootCmd.AddCommand(compileCmd)
 
 }
 

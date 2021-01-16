@@ -44,3 +44,10 @@ func Version() (string, error) {
 	}
 	return string(stdout), nil
 }
+
+// Compile - Nim compiler command
+func Compile(workDir string, env []string, args []string) ([]byte, []byte, error) {
+	cli := []string{"compile"}
+	cli = append(cli, args...)
+	return nimCmd(workDir, env, cli)
+}

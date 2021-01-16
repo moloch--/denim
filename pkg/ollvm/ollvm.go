@@ -2,6 +2,7 @@ package ollvm
 
 import (
 	"bytes"
+	"fmt"
 	"os"
 	"os/exec"
 	"path"
@@ -19,11 +20,45 @@ import (
 	You should have received a copy of the GNU General Public License
 	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
+const (
+
+	// MaxProb - Maxium probability
+	MaxProb = 100
+	// MaxBCFLoop - Max loop value
+	MaxBCFLoop = 5
+	// MaxSubLoop - Max loop value
+	MaxSubLoop = 4
+	// MaxSplit - Max split value
+	MaxSplit = 5
+)
 
 // Clang - Holds an instances of a clang install
 type Clang struct {
 	ClangRootDir string
 	ClangExe     string
+}
+
+// ObfArgs - Build options
+type ObfArgs struct {
+
+	// Compile Options
+	Static bool     `json:"static,omitempty"`
+	Link   []string `json:"link,omitempty"`
+
+	// Bogus control flow
+	BCF     bool `json:"bcf"`
+	BCFProb int  `json:"bcf_prob"`
+	BCFLoop int  `json:"bcf_loop"`
+
+	// Instructions substitution
+	Sub     bool `json:"sub"`
+	SubLoop int  `json:"sub_loop"`
+
+	// Control flow flattening
+	Flatten      bool `json:"flaten"`
+	FlattenSplit int  `json:"flatten_split"`
+
+	AESSeed string `json:"aes_seed"`
 }
 
 // InitClang - Initalize a Clang struct
@@ -65,4 +100,20 @@ func (c *Clang) clangCmd(wd string, env []string, command []string) ([]byte, []b
 	cmd.Stderr = &stderr
 	err := cmd.Run()
 	return stdout.Bytes(), stderr.Bytes(), err
+}
+
+func (c *Clang) verifyObfArgs(obfArgs *ObfArgs) error {
+	if obfArgs.BCF && MaxProb < obfArgs.BCFProb {
+		return fmt.Errorf("BFC probability cannot exceed %d", MaxProb)
+	}
+	if obfArgs.BCF && MaxBCFLoop < obfArgs.BCFLoop {
+		return fmt.Errorf("BCF loop cannot exceed %d", MaxBCFLoop)
+	}
+	if obfArgs.Sub && MaxSubLoop < obfArgs.SubLoop {
+		return fmt.Errorf("Substitution loop cannot exceed %d", MaxSubLoop)
+	}
+	if obfArgs.Flatten && MaxSplit < obfArgs.FlattenSplit {
+		return fmt.Errorf("Flatten split cannot exceed %d", MaxSplit)
+	}
+	return nil
 }

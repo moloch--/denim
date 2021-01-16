@@ -92,16 +92,16 @@ func setup(cmd *cobra.Command, args []string) {
 }
 
 func initHTTPClient(cmd *cobra.Command) *http.Client {
-	timeoutSeconds, err := cmd.Flags().GetInt("timeout")
+	timeoutSeconds, err := cmd.Flags().GetInt(timeoutFlagStr)
 	timeout := time.Duration(timeoutSeconds * int(time.Second))
 	if err != nil {
-		fmt.Printf("Failed to parse --timeout flag: %s\n", err)
+		fmt.Printf("Failed to parse --%s flag: %s\n", timeoutFlagStr, err)
 		return nil
 	}
 
-	skipTLSValidation, err := cmd.Flags().GetBool("skip-tls-validation")
+	skipTLSValidation, err := cmd.Flags().GetBool(skipTLSValidationFlagStr)
 	if err != nil {
-		fmt.Printf("Failed to parse --skip-tls-validation flag: %s\n", err)
+		fmt.Printf("Failed to parse --%s flag: %s\n", skipTLSValidationFlagStr, err)
 		return nil
 	}
 	if skipTLSValidation {
@@ -121,9 +121,9 @@ func initHTTPClient(cmd *cobra.Command) *http.Client {
 		}
 	}
 
-	proxy, err := cmd.Flags().GetString("proxy")
+	proxy, err := cmd.Flags().GetString(proxyFlagStr)
 	if err != nil {
-		fmt.Printf("Failed to parse --proxy flag: %s\n", err)
+		fmt.Printf("Failed to parse --%s flag: %s\n", proxyFlagStr, err)
 		return nil
 	}
 	var proxyURL *url.URL = nil

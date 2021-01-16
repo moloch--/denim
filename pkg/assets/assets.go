@@ -44,3 +44,16 @@ func GetClangDir() string {
 	rootDir := GetRootDir()
 	return filepath.Join(rootDir, "ollvm", "build")
 }
+
+// GetNimCache - Get the clang root directory
+func GetNimCache() string {
+	rootDir := GetRootDir()
+	nimcache := filepath.Join(rootDir, "nimcache")
+	if _, err := os.Stat(nimcache); os.IsNotExist(err) {
+		err = os.MkdirAll(nimcache, 0700)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+	return nimcache
+}
