@@ -87,10 +87,15 @@ func Compile(build *Build, obfArgs *ollvm.ObfArgs) error {
 			return err
 		}
 	}
-	linker := strings.Fields(nimProject.LinkCmd)
-	if linker[0] == "clang" || linker[0] == "clang.exe" {
-		linker = linker[1:]
+
+	linker := []string{"-o", nimProject.OutputFile}
+	for _, link := range nimProject.Link {
+		if strings.HasSuffix(link, ".res") {
+			continue
+		}
+		linker = append(linker, link)
 	}
+	linker = append(linker, "-g")
 	stdout, stderr, err := clang.Compile(nimCache, linker)
 	if build.Verbose {
 		if 0 < len(stdout) {
