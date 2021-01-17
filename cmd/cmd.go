@@ -52,7 +52,9 @@ const (
 	proxyFlagStr             = "proxy"
 
 	// Compile - Standard Flags
-	outputFlagStr = "output"
+	outputFlagStr  = "output"
+	allCodeFlagStr = "all"
+	verboseFlagStr = "verbose"
 
 	// Compile - Obfuscation Flags
 	bcfFlagStr      = "bcf"
@@ -97,6 +99,8 @@ func init() {
 
 	// Compile - Standard options
 	compileCmd.Flags().StringP(outputFlagStr, "o", "", "output file")
+	compileCmd.Flags().BoolP(allCodeFlagStr, "a", false, "obfuscate all code including nim stdlib")
+	compileCmd.Flags().BoolP(verboseFlagStr, "v", false, "display verbose information")
 	rootCmd.AddCommand(compileCmd)
 
 }

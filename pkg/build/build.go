@@ -31,7 +31,10 @@ type Build struct {
 	Name     string
 	NimFiles []string
 
-	UserCodeOnly bool
+	Output     string
+	ObfAllCode bool
+
+	Verbose bool
 }
 
 // Compile a nim program with Obfuscator-LLVM
@@ -42,7 +45,7 @@ func Compile(build *Build, obfArgs *ollvm.ObfArgs) error {
 	}
 
 	// Compile Nim
-	nimCache, err := compileNimCode(build.Name, build.NimFiles, clang)
+	nimCache, err := compileNimCode(build, clang)
 	if err != nil {
 		return err
 	}
@@ -56,17 +59,30 @@ func Compile(build *Build, obfArgs *ollvm.ObfArgs) error {
 		if len(step) != 2 {
 			return fmt.Errorf("Malformed step: %v", step)
 		}
+
 		cFile := filepath.Base(step[0])
 		compileCmd := strings.Fields(step[1])
 		if compileCmd[0] == "clang" || compileCmd[0] == "clang.exe" {
 			compileCmd = compileCmd[1:]
 		}
+
+		var stdout []byte
+		var stderr []byte
 		var err error
-		if strings.HasPrefix(cFile, "@") || !build.UserCodeOnly {
-			_, _, err = clang.ObfCompile(nimCache, compileCmd, obfArgs)
+		if strings.HasPrefix(cFile, "@") || build.ObfAllCode {
+			stdout, stderr, err = clang.ObfCompile(nimCache, compileCmd, obfArgs)
 		} else {
-			_, _, err = clang.Compile(nimCache, compileCmd)
+			stdout, stderr, err = clang.Compile(nimCache, compileCmd)
 		}
+		if build.Verbose {
+			if 0 < len(stdout) {
+				fmt.Printf(string(stdout))
+			}
+			if 0 < len(stderr) {
+				fmt.Printf(string(stderr))
+			}
+		}
+
 		if err != nil {
 			return err
 		}
@@ -75,7 +91,15 @@ func Compile(build *Build, obfArgs *ollvm.ObfArgs) error {
 	if linker[0] == "clang" || linker[0] == "clang.exe" {
 		linker = linker[1:]
 	}
-	_, _, err = clang.Compile(nimCache, linker)
+	stdout, stderr, err := clang.Compile(nimCache, linker)
+	if build.Verbose {
+		if 0 < len(stdout) {
+			fmt.Printf(string(stdout))
+		}
+		if 0 < len(stderr) {
+			fmt.Printf(string(stderr))
+		}
+	}
 	if err != nil {
 		return err
 	}
@@ -84,14 +108,27 @@ func Compile(build *Build, obfArgs *ollvm.ObfArgs) error {
 }
 
 // nim compile --genScript --compileOnly --cc=clang --clang.exe:PATH --nimcache:PATH helloworld.nim
-func compileNimCode(project string, nimFiles []string, clang *ollvm.Clang) (string, error) {
-	nimCache := filepath.Join(assets.GetNimCacheRoot(), project)
+func compileNimCode(build *Build, clang *ollvm.Clang) (string, error) {
+	nimCache := filepath.Join(assets.GetNimCacheRoot(), build.Name)
 	args := []string{"--genScript", "--compileOnly", "--cc:clang"}
 	args = append(args, fmt.Sprintf("--clang.exe=%s", clang.ClangExe))
 	args = append(args, fmt.Sprintf("--nimcache:%s", nimCache))
-	args = append(args, nimFiles...)
+	if build.Output != "" {
+		args = append(args, fmt.Sprintf("--out:%s", build.Output))
+	}
+	args = append(args, build.NimFiles...)
+
 	workDir, _ := os.Getwd()
-	_, _, err := nim.Compile(workDir, os.Environ(), args)
+	stdout, stderr, err := nim.Compile(workDir, os.Environ(), args)
+	if build.Verbose {
+		if 0 < len(stdout) {
+			fmt.Printf(string(stdout))
+		}
+		if 0 < len(stderr) {
+			fmt.Printf(string(stderr))
+		}
+	}
+
 	return nimCache, err
 }
 

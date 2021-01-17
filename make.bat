@@ -5,7 +5,7 @@
 @echo off
 SETLOCAL
 
-SET VERSION=0.0.1
+SET VERSION=0.0.2
 
 SET CMD_PKG=github.com/moloch--/denim/cmd
 SET LDFLAGS=-s -w

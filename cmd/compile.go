@@ -34,22 +34,43 @@ var compileCmd = &cobra.Command{
 		if !preflight() {
 			return
 		}
-
 		if len(args) < 1 {
 			fmt.Printf(Warn + "Missing input files\n")
 			return
+		}
+
+		allCode, err := cmd.Flags().GetBool(allCodeFlagStr)
+		if err != nil {
+			fmt.Printf(Warn+"Failed to parse --%s flag: %s\n", allCodeFlagStr, err)
+			return
+		}
+		output, err := cmd.Flags().GetString(outputFlagStr)
+		if err != nil {
+			fmt.Printf(Warn+"Failed to parse --%s flag: %s\n", outputFlagStr, err)
+			return
+		}
+		verbose, err := cmd.Flags().GetBool(verboseFlagStr)
+		if err != nil {
+			fmt.Printf(Warn+"Failed to parse --%s flag: %s\n", verboseFlagStr, err)
+			return
+		}
+		buildArgs := &build.Build{
+			Name:       filepath.Base(args[0]),
+			NimFiles:   args,
+			Output:     output,
+			ObfAllCode: allCode,
+			Verbose:    verbose,
 		}
 
 		obfArgs, err := getObfArgs(cmd)
 		if err != nil {
 			return
 		}
-		buildArgs := &build.Build{
-			Name:         filepath.Base(args[0]),
-			NimFiles:     args,
-			UserCodeOnly: true,
+
+		err = build.Compile(buildArgs, obfArgs)
+		if err != nil {
+			fmt.Printf(Warn+"%s", err)
 		}
-		build.Compile(buildArgs, obfArgs)
 	},
 }
 
