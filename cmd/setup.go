@@ -57,7 +57,7 @@ func setup(cmd *cobra.Command, args []string) {
 
 	_, err := nim.Version()
 	if err != nil {
-		fmt.Printf(Warn + "Nim does not appear to be on your PATH!")
+		fmt.Printf(Warn + "Nim does not appear to be on your PATH!\n")
 	}
 
 	client := initHTTPClient(cmd)

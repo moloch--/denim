@@ -36,7 +36,7 @@ var versionCmd = &cobra.Command{
 
 		nimVer, err := nim.Version()
 		if err != nil {
-			fmt.Printf(Warn + "Nim does not appear to be on your PATH!")
+			fmt.Printf(Warn + "Nim does not appear to be on your PATH!\n")
 		} else {
 			fmt.Printf(nimVer + "\n\n")
 		}
