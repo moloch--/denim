@@ -48,7 +48,7 @@ func Version() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	stdout, stderr, err := nimCmd(cwd, []string{}, []string{"--version"})
+	stdout, stderr, err := nimCmd(cwd, os.Environ(), []string{"--version"})
 	if err != nil {
 		return string(stderr), err
 	}
